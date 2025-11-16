@@ -31,7 +31,7 @@ unique_values
 missing_values = sapply(dataset, function(x) sum(is.na(x)))
 for (i in 1:length(missing_values)) {
   cat("Columna:", names(missing_values)[i], "\n")
-  cat("- Valores faltantes: ", missing_values[i]," (",missing_values[i]/dimensions[1],"%) \n", sep="")
+  cat("- Valores faltantes: ", missing_values[i]," (",100*missing_values[i]/dimensions[1],"%) \n", sep="")
 }
 
 # DATASET REDUCIDO
@@ -42,7 +42,7 @@ reduced_dataset = dataset[, c(1,2,4,17,19,22)]
 rds_missing_values = sapply(reduced_dataset, function(x) sum(is.na(x)))
 for (i in 1:length(rds_missing_values)) {
   cat("Columna:", names(rds_missing_values)[i], "\n")
-  cat("- Valores faltantes: ", rds_missing_values[i]," (",rds_missing_values[i]/dim(reduced_dataset)[1],"%) \n", sep="")
+  cat("- Valores faltantes: ", rds_missing_values[i]," (",100*rds_missing_values[i]/dim(reduced_dataset)[1],"%) \n", sep="")
 }
 
 # 2- Se eliminan filas con datos faltantes en 'Incidencia'
@@ -53,7 +53,7 @@ cat("Países sin datos de incidencia de malaria:", countries_with_no_incidence_d
 cds_missing_values = sapply(cleaned_dataset, function(x) sum(is.na(x)))
 for (i in 1:length(cds_missing_values)) {
   cat("Columna:", names(cds_missing_values)[i], "\n")
-  cat("- Valores faltantes: ", cds_missing_values[i]," (",cds_missing_values[i]/dim(cleaned_dataset)[1],"%) \n", sep="")
+  cat("- Valores faltantes: ", cds_missing_values[i]," (",100*cds_missing_values[i]/dim(cleaned_dataset)[1],"%) \n", sep="")
 }
 
 # 3- Se obtiene un dataframe mostrando aquellas filas que poseen un dato faltante en alguna de las columnas restantes

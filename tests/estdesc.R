@@ -55,7 +55,7 @@ ggplot(dataset, aes(x=factor(Year), y=People.using.at.least.basic.sanitation.ser
   theme_minimal()
 
 # 2- Para un año en particular
-year_of_interest = 2012
+year_of_interest = 2016
 year_data = subset(dataset, Year == year_of_interest)
 
 # Resumen estadístico
