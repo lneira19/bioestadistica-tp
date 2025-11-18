@@ -19,8 +19,10 @@ for (i in 1:length(column_types)) {
 # --- Verificación de Supuestos: Test de Normalidad de Shapiro-Wilk ---
 
 # La Hipótesis Nula (H₀) de este test es que los datos *sí* siguen una distribución normal.
-# - Si p < alpha = 0.05: Rechazamos H₀, entonces los datos NO son normales.
-# - Si p > alpha = 0.05: No podemos rechazar H₀, entonces los datos SÍ son normales.
+# La Hipótesis Alternativa (H₁) es que los datos *no* siguen una distribución normal.
+
+# - Si p < 0.05: Rechazamos H₀, entonces los datos NO son normales.
+# - Si p > 0.05: No podemos rechazar H₀, entonces los datos SÍ son normales.
 
 year_of_interest = 2016
 year_data = subset(dataset, Year == year_of_interest)
@@ -46,13 +48,12 @@ print(shapiro_test_sanidad)
 
 
 # Ver lo Restultados Obtenidos
-cat("Resultados del Test de Normalidad de Shapiro-Wilk para el año", year_of_interest, ":\n")
-cat("1. Incidencia de Malaria: p-value =", shapiro_test_malaria$p.value, "\n")
-cat("2. Población Urbana: p-value =", shapiro_test_urbana$p.value, "\n")
-cat("3. Acceso a Agua: p-value =", shapiro_test_agua$p.value, "\n")
-cat("4. Acceso a Sanidad: p-value =", shapiro_test_sanidad$p.value, "\n")
-cat("\n")
-cat("Interpretación:\n")
-cat("- Si el p-value es menor a 0.05, rechazamos la hipótesis nula y concluimos que los datos no siguen una distribución normal.\n")
-cat("- Si el p-value es mayor a 0.05, no podemos rechazar la hipótesis nula y concluimos que los datos podrían seguir una distribución normal.\n")
-cat("\n")
+cat(
+  "Resultados del Test de Normalidad de Shapiro-Wilk para el año", year_of_interest, ":\n",
+  "1. Incidencia de Malaria: p-value =", shapiro_test_malaria$p.value, "\n",
+  "2. Población Urbana: p-value =", shapiro_test_urbana$p.value, "\n",
+  "3. Acceso a Agua: p-value =", shapiro_test_agua$p.value, "\n",
+  "4. Acceso a Sanidad: p-value =", shapiro_test_sanidad$p.value, "\n",
+  "Interpretación:\n",
+  "- Si el p-value es menor a 0.05, rechazamos la hipótesis nula y concluimos que los datos no siguen una distribución normal.\n",
+  "- Si el p-value es mayor a 0.05, no podemos rechazar la hipótesis nula y concluimos que los datos podrían seguir una distribución normal.\n")
