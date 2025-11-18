@@ -91,74 +91,90 @@ if (nrow(dup_chk) > 0) {
 ####   - Nota: Independencia se justifica por diseño (corte transversal)
 ####------------------------------------------------------------
 
-check_pearson_assumptions <- function(df, xvar, yvar = "incidence", make_plots = TRUE) {
-  # Subset consistente (sin NA en la pareja)
-  dd <- df %>% select(dplyr::all_of(c(yvar, xvar))) %>% tidyr::drop_na()
+check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
+                                      make_plots = TRUE, qq_residuals = FALSE) {
+  # Submuestra consistente (mismas filas sin NA para X e Y)
+  dd <- df %>%
+    dplyr::select(dplyr::all_of(c(yvar, xvar))) %>%
+    tidyr::drop_na()
+  
   if (nrow(dd) < 5) {
     return(data.frame(
-      pair                = paste(yvar, "~", xvar),
-      n_used              = nrow(dd),
-      shapiro_y_p         = NA_real_,
-      shapiro_x_p         = NA_real_,
-      shapiro_residuals_p = NA_real_,
-      white_like_p        = NA_real_,
-      stringsAsFactors    = FALSE
+      pair         = paste(yvar, "~", xvar),
+      n_used       = nrow(dd),
+      shapiro_y_p  = NA_real_,   # diagnóstico univariante (Y)
+      shapiro_x_p  = NA_real_,   # diagnóstico univariante (X)
+      white_like_p = NA_real_,   # homocedasticidad
+      stringsAsFactors = FALSE
     ))
   }
   
-  # Normalidad univariante (X y Y) y de residuales del ajuste lineal
+  # Diagnóstico univariante (Shapiro) — no condiciona la validez de Pearson
   sh_y <- tryCatch(shapiro.test(dd[[yvar]]), error = function(e) NULL)
   sh_x <- tryCatch(shapiro.test(dd[[xvar]]),  error = function(e) NULL)
   
+  # Ajuste lineal SOLO para obtener residuales (White) — sin gráfico de Res vs ŷ
   fit  <- lm(stats::reformulate(xvar, yvar), data = dd)
   res  <- resid(fit)
   fitv <- fitted(fit)
-  sh_r <- tryCatch(shapiro.test(res), error = function(e) NULL)
   
-  # Homocedasticidad tipo White (LM = n*R^2 de e^2 ~ ŷ + ŷ^2; p grande sugiere varianza constante)
+  # Homocedasticidad tipo White (LM = n*R^2 de e^2 ~ ŷ + ŷ^2)
   aux   <- lm(I(res^2) ~ fitv + I(fitv^2))
-  n     <- nrow(dd)
-  k     <- 2L  # fitv y fitv^2
+  n     <- nrow(dd); k <- 2L
   LM    <- n * summary(aux)$r.squared
   white <- pchisq(LM, df = k, lower.tail = FALSE)
   
-  # Gráficos diagnósticos 
+  # QQ-plots: Y y X (univariantes); opcionalmente residuales
   if (make_plots) {
+    # Si el dispositivo es chico (ej. chunks Rmd), abrir uno más grande para evitar "figure margins too large"
+    sz <- try(dev.size("in"), silent = TRUE)
+    if (inherits(sz, "try-error") || any(is.na(sz)) || sz[1] < 6 || sz[2] < 4) {
+      suppressWarnings(try(dev.new(width = 8, height = 5), silent = TRUE))
+    }
     op <- par(no.readonly = TRUE); on.exit(par(op), add = TRUE)
-    par(mfrow = c(1,2), mar = c(4.5,4.5,1.6,1))
-    plot(fitv, res, xlab = "Ajustados (ŷ)", ylab = "Residuales",
-         main = paste("Res vs Ajustados:", yvar, "~", xvar))
-    abline(h = 0, lty = 2)
-    qqnorm(res, main = paste("QQ residuales:", yvar, "~", xvar)); qqline(res)
+    
+    if (qq_residuals) {
+      par(mfrow = c(1,3), mar = c(4.5,4.5,1.6,1))
+    } else {
+      par(mfrow = c(1,2), mar = c(4.5,4.5,1.6,1))
+    }
+    
+    # QQ de Y
+    qqnorm(dd[[yvar]], main = paste("QQ de", yvar)); qqline(dd[[yvar]])
+    # QQ de X
+    qqnorm(dd[[xvar]], main = paste("QQ de", xvar)); qqline(dd[[xvar]])
+    # (Opcional) QQ de residuales
+    if (qq_residuals) {
+      qqnorm(res, main = paste("QQ de residuales:", yvar, "~", xvar)); qqline(res)
+    }
   }
   
   data.frame(
-    pair                = paste(yvar, "~", xvar),
-    n_used              = nrow(dd),
-    shapiro_y_p         = if (!is.null(sh_y)) sh_y$p.value else NA_real_,
-    shapiro_x_p         = if (!is.null(sh_x)) sh_x$p.value else NA_real_,
-    shapiro_residuals_p = if (!is.null(sh_r)) sh_r$p.value else NA_real_,
-    white_like_p        = white,
-    stringsAsFactors    = FALSE
+    pair         = paste(yvar, "~", xvar),
+    n_used       = nrow(dd),
+    shapiro_y_p  = if (!is.null(sh_y)) sh_y$p.value else NA_real_,
+    shapiro_x_p  = if (!is.null(sh_x)) sh_x$p.value else NA_real_,
+    white_like_p = white,
+    stringsAsFactors = FALSE
   )
 }
 
 ####------------------------------------------------------------
-#### Ejecutar evaluación de supuestos para cada predictor
-####   - Se evalúa Incidence ~ sanitation_pct, ~ safe_water_pct, ~ urban_pop_pct
-####   - Interpretación básica:
-####       * shapiro_residuals_p >= 0.05  => normalidad de errores razonable
-####       * white_like_p       >= 0.05  => homocedasticidad plausible
-####       * Independencia: declarada por diseño en corte transversal
+#### Ejecutar la evaluación (sin Res vs Ajustados; con QQ de Y y X)
+####   - white_like_p >= 0.05 → homocedasticidad plausible
+####   - Los QQ-plots de Y y X son diagnósticos descriptivos (no criterios)
+####   - Independencia: por diseño (corte transversal)
 ####------------------------------------------------------------
 
 predictors <- c("sanitation_pct", "safe_water_pct", "urban_pop_pct")
 
 assump_tbl <- dplyr::bind_rows(lapply(predictors, function(x) {
-  check_pearson_assumptions(dyear, xvar = x, make_plots = TRUE)
+  # qq_residuals = FALSE para NO mostrar QQ de residuales (solo Y y X)
+  check_pearson_assumptions(dyear, xvar = x, make_plots = TRUE, qq_residuals = FALSE)
 }))
 
 print(assump_tbl)
+
 
 #--- spearman -----
 
