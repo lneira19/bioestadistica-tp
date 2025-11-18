@@ -16,41 +16,33 @@ for (i in 1:length(column_types)) {
   cat("- Tipo de dato: ", column_types[i], "\n", sep="")
 }
 
-# --- Carga y filtrado de datos (basado en tu script) ---
-# Asegúrate de haber corrido estas líneas primero
-
 # --- Verificación de Supuestos: Test de Normalidad de Shapiro-Wilk ---
 
 # La Hipótesis Nula (H₀) de este test es que los datos *sí* siguen una distribución normal.
-# - Si p < 0.05: Rechazamos H₀. Los datos NO son normales.
-# - Si p > 0.05: No podemos rechazar H₀. Los datos SON (o podrían ser) normales.
+# - Si p < alpha = 0.05: Rechazamos H₀, entonces los datos NO son normales.
+# - Si p > alpha = 0.05: No podemos rechazar H₀, entonces los datos SÍ son normales.
 
 year_of_interest = 2016
 year_data = subset(dataset, Year == year_of_interest)
 
-cat("--- 1. Test de Normalidad: Incidencia de Malaria ---\n")
-# Es muy probable que este p-value sea < 0.05
+print("--- 1. Test de Normalidad: Incidencia de Malaria ---")
 shapiro_test_malaria <- shapiro.test(year_data$Incidence.of.malaria..per.1.000.population.at.risk.)
 print(shapiro_test_malaria)
-cat("\n")
 
 
-cat("--- 2. Test de Normalidad: Población Urbana ---\n")
+print("--- 2. Test de Normalidad: Población Urbana ---")
 shapiro_test_urbana <- shapiro.test(year_data$Urban.population....of.total.population.)
 print(shapiro_test_urbana)
-cat("\n")
 
 
-cat("--- 3. Test de Normalidad: Acceso a Agua ---\n")
+print("--- 3. Test de Normalidad: Acceso a Agua ---")
 shapiro_test_agua <- shapiro.test(year_data$People.using.at.least.basic.drinking.water.services....of.population.)
 print(shapiro_test_agua)
-cat("\n")
 
 
-cat("--- 4. Test de Normalidad: Acceso a Sanidad ---\n")
+print("--- 4. Test de Normalidad: Acceso a Sanidad ---")
 shapiro_test_sanidad <- shapiro.test(year_data$People.using.at.least.basic.sanitation.services....of.population.)
 print(shapiro_test_sanidad)
-cat("\n")
 
 
 # Ver lo Restultados Obtenidos
