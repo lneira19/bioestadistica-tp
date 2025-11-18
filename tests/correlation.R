@@ -14,7 +14,7 @@ library(broom)
 #### - Se normalizan nombres para evitar espacios/símbolos raros
 ####------------------------------------------------------------
 
-raw <- readr::read_csv("FinalCleanedDatasetAfricaMalaria.csv", show_col_types = FALSE)
+raw <- readr::read_csv("dbs/FinalCleanedDatasetAfricaMalaria.csv", show_col_types = FALSE)
 dataset <- janitor::clean_names(raw)
 
 ####------------------------------------------------------------
