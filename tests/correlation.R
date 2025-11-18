@@ -78,7 +78,7 @@ year_target <- 2017
 dyear <- dataset %>% filter(year == year_target)
 
 
-#' 5. **Independencia de las observaciones**
+#' **Independencia de las observaciones**
 #' Esta es una suposición clave tanto para Pearson como para Spearman.
 #' Al filtrar por un solo año (`year_target`), cada fila representa un país diferente.
 #' Esto se conoce como "diseño de corte transversal" (cross-sectional).
