@@ -225,15 +225,46 @@ assump_tbl <- dplyr::bind_rows(lapply(predictors, function(x) {
 print(assump_tbl)
 
 
-#--- spearman -----
+####------------------------------------------------------------
+#### Correlación de Spearman (rho)
+####------------------------------------------------------------
 
+#'
+#' ## Correlación de Spearman (rho)
+#'
+#' Se utiliza cuando **no se cumplen** los supuestos de Pearson
+#' (especialmente normalidad o relación lineal).
+#'
+#' 1.  **Variables al menos ordinales**: Sirve para variables de ranking,
+#'     pero también para continuas (como las nuestras) que no son normales.
+#' 2.  **Relación monótona**: Este es su supuesto clave. La relación debe
+#'     ser *consistente* (siempre sube o siempre baja), pero **no
+#'     necesariamente lineal** (puede ser una curva, mientras no
+#'     cambie de dirección).
+#' 3.  **Independencia de las observaciones**: Igual que Pearson. Ya se
+#'     verificó por diseño.
+#'
+#' ## Diferencia clave: descriptivo vs inferencial
+#'
+#' * **Correlación (Pearson/Spearman)**: Es principalmente una medida
+#'     **descriptiva**. `rho = -0.7` nos dice la *fuerza* y *dirección* de
+#'     la asociación.
+#' * **Regresión (lm / glm)**: Es una herramienta **inferencial**. Nos
+#'     permite *modelar* y *cuantificar* el efecto (ej. "por cada 1%
+#'     más de sanidad, la malaria baja X unidades").
+#'
+#' La función `cor.test` que usamos abajo es **inferencial** porque
+#' calcula un `p-value` para la hipótesis nula (H0: rho = 0).
+#'
 
 # Predictores a contrastar contra `incidence`
 pairs <- c("sanitation_pct", "safe_water_pct", "urban_pop_pct")
 
 # Función: corre Spearman para una pareja (incidence ~ xvar)
 spearman_row <- function(xvar) {
+  #' Se eliminan NAs por pareja
   keep <- stats::complete.cases(dyear$incidence, dyear[[xvar]])
+  #' Se calcula el test de correlación de Spearman
   ct <- suppressWarnings(
     cor.test(dyear$incidence[keep], dyear[[xvar]][keep],
              method = "spearman", exact = FALSE, use = "pairwise.complete.obs")
@@ -241,7 +272,7 @@ spearman_row <- function(xvar) {
   data.frame(
     pair = paste("incidence ~", xvar),
     n_used = sum(keep),
-    rho = unname(ct$estimate), # tamaño y dirección de la asociación
+    rho = unname(ct$estimate), # Coeficiente 'rho' (fuerza y dirección)
     p_value = ct$p.value, # contraste H0: rho = 0 (dos colas por defecto)
     stringsAsFactors = FALSE
   )
@@ -249,6 +280,14 @@ spearman_row <- function(xvar) {
 
 # Ejecutar Spearman en las tres parejas y ajustar p-values por múltiples pruebas (BH)
 tab <- do.call(rbind, lapply(pairs, spearman_row))
+
+#' **Ajuste de p-values por Pruebas Múltiples (Bonferroni-Holm)**
+#'
+#' Estamos haciendo 3 tests a la vez. Esto infla la probabilidad de
+#' encontrar un "falso positivo" (un p-value < 0.05 solo por azar).
+#' El método "BH" (Benjamini-Hochberg) ajusta los p-values para
+#' controlar esta tasa de falsos descubrimientos. Es una práctica
+#' metodológica robusta.
 tab$p_adj_BH <- p.adjust(tab$p_value, method = "BH")
 
 # Presentación: redondeo y orden por p ajustado
@@ -258,4 +297,9 @@ tab_out <- within(tab, {
   p_adj_BH <- signif(p_adj_BH, 3)
 })
 tab_out <- tab_out[order(tab_out$p_adj_BH), ]
+
+#' La tabla final muestra:
+#' - `rho`: La fuerza de la correlación (Spearman).
+#' - `p_value`: La significancia estadística de esa correlación.
+#' - `p_adj_BH`: La significancia ajustada (la que deberías reportar).
 print(tab_out)
