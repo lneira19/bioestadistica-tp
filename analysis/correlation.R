@@ -11,17 +11,11 @@ library(broom)
 
 ####------------------------------------------------------------
 #### Leer CSV y limpiar nombres a snake_case
-#### - Se normalizan nombres para evitar espacios/símbolos raros
 ####------------------------------------------------------------
 
 raw <- readr::read_csv("dbs/FinalCleanedDatasetAfricaMalaria.csv", show_col_types = FALSE)
 dataset <- janitor::clean_names(raw)
 
-####------------------------------------------------------------
-#### Detectar columnas por patrón y renombrar a corto
-#### - Los títulos pueden variar (p.ej., "safely_managed" vs "at_least_basic"),
-#### por eso buscamos por expresiones regulares en nombres normalizados.
-####------------------------------------------------------------
 
 nm <- names(dataset)
 
@@ -74,16 +68,12 @@ print(names(dataset))
 #### Selección del año de análisis
 ####------------------------------------------------------------
 
-year_target <- 2017
+year_target <- 2016
 dyear <- dataset %>% filter(year == year_target)
 
 
 #' **Independencia de las observaciones**
-#' Esta es una suposición clave tanto para Pearson como para Spearman.
-#' Al filtrar por un solo año (`year_target`), cada fila representa un país diferente.
-#' Esto se conoce como "diseño de corte transversal" (cross-sectional).
-#' Este diseño garantiza que la observación de un país (ej. Angola) no influye
-#' en la observación de otro (ej. Egipto).
+#' Se da por hecho la independencia al ser paises independientes 
 #' La siguiente comprobación de duplicados verifica esta independencia por diseño.
 
 dup_chk <- dyear %>% count(country, name = "n") %>% filter(n > 1)
@@ -97,14 +87,6 @@ if (nrow(dup_chk) > 0) {
 
 #'
 #' ## Supuestos de Correlación de Pearson (r)
-#'
-#' A continuación, se evalúan los supuestos clásicos de una relación lineal.
-#' La correlación de Pearson es una medida de asociación, pero para
-#' realizar una prueba de hipótesis (inferencia) sobre ella, se asumen
-#' condiciones similares a las de un Modelo de Regresión Lineal (lm).
-#' Esta función (`check_pearson_assumptions`) evalúa formalmente dichos supuestos
-#' (como normalidad y homocedasticidad) para justificar la elección del test.
-#'
 #' 1.  **Variables cuantitativas y continuas**:
 #'     Nuestras variables (`incidence`, `sanitation_pct`, etc.) cumplen esto.
 #'
@@ -148,7 +130,7 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
     ))
   }
   
-  # Diagnóstico univariante (Shapiro) — no condiciona la validez de Pearson
+  # Diagnóstico univariante (Shapiro) 
   #' 3. **Normalidad (en Y)**: Verificación univariante.
   sh_y <- tryCatch(shapiro.test(dd[[yvar]]), error = function(e) NULL)
   #' 3. **Normalidad (en X)**: Verificación univariante.
@@ -161,7 +143,7 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
   
   # Homocedasticidad tipo White (LM = n*R^2 de e^2 ~ ŷ + ŷ^2)
   #' H0: La varianza es constante (Homocedasticidad).
-  #' Si p < 0.05, se rechaza H0 y tenemos Heterocedasticidad (problema).
+  #' Si p < 0.05, se rechaza H0 y tenemos Heterocedasticidad 
   aux <- lm(I(res^2) ~ fitv + I(fitv^2))
   n <- nrow(dd); k <- 2L
   LM <- n * summary(aux)$r.squared
@@ -169,7 +151,6 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
   
   # QQ-plots: Y y X (univariantes)
   if (make_plots) {
-    # Si el dispositivo es chico (ej. chunks Rmd), abrir uno más grande para evitar "figure margins too large"
     sz <- try(dev.size("in"), silent = TRUE)
     if (inherits(sz, "try-error") || any(is.na(sz)) || sz[1] < 6 || sz[2] < 4) {
       suppressWarnings(try(dev.new(width = 8, height = 5), silent = TRUE))
@@ -228,9 +209,6 @@ print(assump_tbl)
 ####------------------------------------------------------------
 #### Correlación de Spearman (rho)
 ####------------------------------------------------------------
-
-#' Se utiliza cuando **no se cumplen** los supuestos de Pearson
-#' (especialmente normalidad o relación lineal).
 #'
 #' **Variables al menos ordinales**: Sirve para variables de ranking,
 #'     pero también para continuas (como las nuestras) que no son normales.
@@ -284,5 +262,5 @@ tab_out <- tab_out[order(tab_out$p_adj_BH), ]
 #' La tabla final muestra:
 #' - `rho`: La fuerza de la correlación (Spearman).
 #' - `p_value`: La significancia estadística de esa correlación.
-#' - `p_adj_BH`: La significancia ajustada (la que deberías reportar).
+#' - `p_adj_BH`: La significancia ajustada 
 print(tab_out)
