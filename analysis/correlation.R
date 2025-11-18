@@ -229,33 +229,16 @@ print(assump_tbl)
 #### Correlación de Spearman (rho)
 ####------------------------------------------------------------
 
-#'
-#' ## Correlación de Spearman (rho)
-#'
 #' Se utiliza cuando **no se cumplen** los supuestos de Pearson
 #' (especialmente normalidad o relación lineal).
 #'
-#' 1.  **Variables al menos ordinales**: Sirve para variables de ranking,
+#' **Variables al menos ordinales**: Sirve para variables de ranking,
 #'     pero también para continuas (como las nuestras) que no son normales.
-#' 2.  **Relación monótona**: Este es su supuesto clave. La relación debe
+#' **Relación monótona**: Este es su supuesto clave. La relación debe
 #'     ser *consistente* (siempre sube o siempre baja), pero **no
-#'     necesariamente lineal** (puede ser una curva, mientras no
-#'     cambie de dirección).
-#' 3.  **Independencia de las observaciones**: Igual que Pearson. Ya se
-#'     verificó por diseño.
-#'
-#' ## Diferencia clave: descriptivo vs inferencial
-#'
-#' * **Correlación (Pearson/Spearman)**: Es principalmente una medida
-#'     **descriptiva**. `rho = -0.7` nos dice la *fuerza* y *dirección* de
-#'     la asociación.
-#' * **Regresión (lm / glm)**: Es una herramienta **inferencial**. Nos
-#'     permite *modelar* y *cuantificar* el efecto (ej. "por cada 1%
-#'     más de sanidad, la malaria baja X unidades").
-#'
-#' La función `cor.test` que usamos abajo es **inferencial** porque
-#' calcula un `p-value` para la hipótesis nula (H0: rho = 0).
-#'
+#'     necesariamente lineal** 
+#' **Independencia de las observaciones**: Igual que Pearson. Ya se
+#'      verificó por diseño.
 
 # Predictores a contrastar contra `incidence`
 pairs <- c("sanitation_pct", "safe_water_pct", "urban_pop_pct")
