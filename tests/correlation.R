@@ -77,19 +77,58 @@ print(names(dataset))
 year_target <- 2017
 dyear <- dataset %>% filter(year == year_target)
 
-# Independencia por diseño (1 país = 1 fila en ese año). Se hace por si acaso un Chequeo simple de duplicados.
+
+#' 5. **Independencia de las observaciones**
+#' Esta es una suposición clave tanto para Pearson como para Spearman.
+#' Al filtrar por un solo año (`year_target`), cada fila representa un país diferente.
+#' Esto se conoce como "diseño de corte transversal" (cross-sectional).
+#' Este diseño garantiza que la observación de un país (ej. Angola) no influye
+#' en la observación de otro (ej. Egipto).
+#' La siguiente comprobación de duplicados verifica esta independencia por diseño.
+
 dup_chk <- dyear %>% count(country, name = "n") %>% filter(n > 1)
 if (nrow(dup_chk) > 0) {
   warning("Hay países duplicados para el año elegido. Revisar independencia por diseño.")
 }
 
 ####------------------------------------------------------------
-#### Función para evaluar supuestos de Pearson (salvo linealidad)
-#### - Normalidad: Shapiro–Wilk en X, Y y residuales del modelo Y ~ X
-#### - Homocedasticidad: test tipo White (auxiliar e^2 ~ ŷ + ŷ^2)
-#### - Gráficos: Residuales vs Ajustados y QQ-plot de residuales
-#### - Nota: Independencia se justifica por diseño (corte transversal)
+#### Función para evaluar supuestos de Pearson
 ####------------------------------------------------------------
+
+#'
+#' ## Supuestos de Correlación de Pearson (r)
+#'
+#' A continuación, se evalúan los supuestos clásicos de una relación lineal.
+#' La correlación de Pearson es una medida de asociación, pero para
+#' realizar una prueba de hipótesis (inferencia) sobre ella, se asumen
+#' condiciones similares a las de un Modelo de Regresión Lineal (lm).
+#' Esta función (`check_pearson_assumptions`) evalúa formalmente dichos supuestos
+#' (como normalidad y homocedasticidad) para justificar la elección del test.
+#'
+#' 1.  **Variables cuantitativas y continuas**:
+#'     Nuestras variables (`incidence`, `sanitation_pct`, etc.) cumplen esto.
+#'
+#' 2.  **Relación lineal (X vs Y)**:
+#'     La relación debe ser lineal. Esto se verifica visualmente con un
+#'     diagrama de dispersión. Si es una curva, Pearson no es adecuado.
+#'
+#' 3.  **Normalidad (idealmente bivariada)**:
+#'     Pearson asume que los datos provienen de una distribución normal.
+#'     La función lo chequea para cada variable (univariante):
+#'     - `Y`: La variable dependiente (en nuestro caso, `incidence`).
+#'     - `X`: Las variables independientes (ej. `sanitation_pct`, `safe_water_pct`).
+#'
+#' 4.  **Homocedasticidad (varianza constante)**:
+#'     La variabilidad de los errores debe ser constante (nube de puntos
+#'     sin forma de cono). La función usa un test tipo White para esto.
+#'
+#' 5.  **Independencia de las observaciones**:
+#'     Ya verificado por el diseño de corte transversal (año 2017).
+#'
+#' 6.  **Ausencia de outliers extremos**:
+#'     Los QQ-plots ayudan a detectar valores atípicos que pueden
+#'     distorsionar el coeficiente de Pearson.
+#' 
 
 check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
                                       make_plots = TRUE, qq_residuals = FALSE) {
@@ -110,7 +149,9 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
   }
   
   # Diagnóstico univariante (Shapiro) — no condiciona la validez de Pearson
+  #' 3. **Normalidad (en Y)**: Verificación univariante.
   sh_y <- tryCatch(shapiro.test(dd[[yvar]]), error = function(e) NULL)
+  #' 3. **Normalidad (en X)**: Verificación univariante.
   sh_x <- tryCatch(shapiro.test(dd[[xvar]]), error = function(e) NULL)
   
   # Ajuste lineal SOLO para obtener residuales (White) — sin gráfico de Res vs ŷ
@@ -119,12 +160,14 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
   fitv <- fitted(fit)
   
   # Homocedasticidad tipo White (LM = n*R^2 de e^2 ~ ŷ + ŷ^2)
+  #' H0: La varianza es constante (Homocedasticidad).
+  #' Si p < 0.05, se rechaza H0 y tenemos Heterocedasticidad (problema).
   aux <- lm(I(res^2) ~ fitv + I(fitv^2))
   n <- nrow(dd); k <- 2L
   LM <- n * summary(aux)$r.squared
   white <- pchisq(LM, df = k, lower.tail = FALSE)
   
-  # QQ-plots: Y y X (univariantes); opcionalmente residuales
+  # QQ-plots: Y y X (univariantes)
   if (make_plots) {
     # Si el dispositivo es chico (ej. chunks Rmd), abrir uno más grande para evitar "figure margins too large"
     sz <- try(dev.size("in"), silent = TRUE)
@@ -138,6 +181,11 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
     } else {
       par(mfrow = c(1,2), mar = c(4.5,4.5,1.6,1))
     }
+    
+    #' 6. **Ausencia de outliers / 3. Normalidad (Visual)**
+    #' El QQ-plot compara los datos con una normal perfecta (la línea).
+    #' Si los puntos se alejan mucho de la línea (especialmente en los
+    #' extremos), indica falta de normalidad y posibles outliers.
     
     # QQ de Y
     qqnorm(dd[[yvar]], main = paste("QQ de", yvar)); qqline(dd[[yvar]])
@@ -160,10 +208,7 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
 }
 
 ####------------------------------------------------------------
-#### Ejecutar la evaluación (sin Res vs Ajustados; con QQ de Y y X)
-#### - white_like_p >= 0.05 → homocedasticidad plausible
-#### - Los QQ-plots de Y y X son diagnósticos descriptivos (no criterios)
-#### - Independencia: por diseño (corte transversal)
+#### Ejecutar la evaluación de supuestos de Pearson
 ####------------------------------------------------------------
 
 predictors <- c("sanitation_pct", "safe_water_pct", "urban_pop_pct")
@@ -173,6 +218,10 @@ assump_tbl <- dplyr::bind_rows(lapply(predictors, function(x) {
   check_pearson_assumptions(dyear, xvar = x, make_plots = TRUE, qq_residuals = FALSE)
 }))
 
+#' La tabla 'assump_tbl' mostrará los p-values de los tests de Shapiro
+#' (shapiro_y_p, shapiro_x_p) y Homocedasticidad (white_like_p).
+#' Si algún p-value de Shapiro es < 0.05, se viola el supuesto de normalidad.
+#' Si white_like_p < 0.05, se viola el supuesto de homocedasticidad.
 print(assump_tbl)
 
 
