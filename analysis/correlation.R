@@ -105,7 +105,7 @@ if (nrow(dup_chk) > 0) {
 #'     sin forma de cono). La función usa un test tipo White para esto.
 #'
 #' 5.  **Independencia de las observaciones**:
-#'     Ya verificado por el diseño de corte transversal (año 2017).
+#'     Ya verificado por el diseño de corte transversal (año 2016).
 #'
 #' 6.  **Ausencia de outliers extremos**:
 #'     Los QQ-plots ayudan a detectar valores atípicos que pueden
@@ -142,7 +142,7 @@ check_pearson_assumptions <- function(df, xvar, yvar = "incidence",
   fitv <- fitted(fit)
   
   # Homocedasticidad tipo White (LM = n*R^2 de e^2 ~ ŷ + ŷ^2)
-  #' H0: La varianza es constante (Homocedasticidad).
+  #' H0: La varianza es constante.
   #' Si p < 0.05, se rechaza H0 y tenemos Heterocedasticidad 
   aux <- lm(I(res^2) ~ fitv + I(fitv^2))
   n <- nrow(dd); k <- 2L
@@ -201,8 +201,8 @@ assump_tbl <- dplyr::bind_rows(lapply(predictors, function(x) {
 
 #' La tabla 'assump_tbl' mostrará los p-values de los tests de Shapiro
 #' (shapiro_y_p, shapiro_x_p) y Homocedasticidad (white_like_p).
-#' Si algún p-value de Shapiro es < 0.05, se viola el supuesto de normalidad.
-#' Si white_like_p < 0.05, se viola el supuesto de homocedasticidad.
+#' Si algún p-value de Shapiro es < 0.05, no se cumple el supuesto de normalidad.
+#' Si white_like_p < 0.05, no se cumple el supuesto de homocedasticidad.
 print(assump_tbl)
 
 
