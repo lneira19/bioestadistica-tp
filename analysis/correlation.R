@@ -3,11 +3,15 @@ if (!requireNamespace("readr", quietly = TRUE)) install.packages("readr")
 if (!requireNamespace("dplyr", quietly = TRUE)) install.packages("dplyr")
 if (!requireNamespace("janitor", quietly = TRUE)) install.packages("janitor")
 if (!requireNamespace("broom", quietly = TRUE)) install.packages("broom")
+if (!requireNamespace("glm2", quietly = TRUE)) install.packages("glm2")
+if (!requireNamespace("broom", quietly = TRUE)) install.packages("broom")
 
 library(readr)
 library(dplyr)
 library(janitor)
 library(broom)
+library(glm2)
+library(ggplot2)
 
 ####------------------------------------------------------------
 #### Leer CSV y limpiar nombres a snake_case
@@ -264,3 +268,36 @@ tab_out <- tab_out[order(tab_out$p_adj_BH), ]
 #' - `p_value`: La significancia estadística de esa correlación.
 #' - `p_adj_BH`: La significancia ajustada 
 print(tab_out)
+
+
+
+
+
+
+####------------------------------------------------------------
+#### MODELADO MULTIVARIADO PARA DATOS NO NORMALES
+####------------------------------------------------------------
+
+# Preparamos los datos (aseguramos que no haya ceros absolutos para Gamma)
+# La distribución Gamma no acepta ceros exactos. Si la incidencia = 0,
+# sumamos una constante infinitesimal (0.001).
+model_data <- dyear %>%
+  dplyr::select(incidence, sanitation_pct, safe_water_pct, urban_pop_pct) %>%
+  tidyr::drop_na() %>%
+  dplyr::mutate(
+    incidence = ifelse(incidence <= 0, 0.001, incidence)
+  )
+
+
+# Entrenamiento del modelo GLM con distribución Gamma y link logarítmico
+gamma_fit <- glm2(
+  incidence ~ sanitation_pct + safe_water_pct + urban_pop_pct,
+  family = Gamma(link = "log"),
+  data = model_data
+)
+
+summary(gamma_fit)
+
+# Resumen del modelo
+summary_gamma <- summary(gamma_fit)
+print(summary_gamma)
