@@ -301,3 +301,11 @@ summary(gamma_fit)
 # Resumen del modelo
 summary_gamma <- summary(gamma_fit)
 print(summary_gamma)
+
+# Checkeo de supuestos del modelo GLM Gamma
+# Gráficos de diagnóstico
+par(mfrow = c(2, 2))
+plot(gamma_fit)
+
+par(mfrow = c(1, 3)) # Para ver las 3 variables juntas
+termplot(gamma_fit, partial.resid = TRUE, se = TRUE, col.res = "blue")
